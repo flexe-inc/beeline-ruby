@@ -14,7 +14,6 @@ module Honeycomb
     rack
     rails
     railtie
-    rake
     sequel
     sinatra
   ].freeze
