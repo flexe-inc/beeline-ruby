@@ -1,0 +1,138 @@
+version: 2.1
+commands:
+  ruby:
+    parameters:
+      ruby-version:
+        type: string
+      gemfile:
+        type: string
+        default: Gemfile
+      command:
+        type: string
+        default: bundle exec rake test
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - gems-v1-<< parameters.ruby-version >>-{{ checksum "Gemfile.lock" }}
+            - gems-v1-<< parameters.ruby-version >>
+      - run: gem update bundler
+      - run: BUNDLE_GEMFILE=<< parameters.gemfile >> ./.circleci/bundler_version.sh
+      - run: BUNDLE_GEMFILE=<< parameters.gemfile >> bundle install --jobs=4 --retry=3 --path vendor/bundle
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: gems-v1-<< parameters.ruby-version >>-{{ checksum "Gemfile.lock" }}
+      - run: BUNDLE_GEMFILE=<< parameters.gemfile >> << parameters.command >>
+
+jobs:
+  publish:
+    docker:
+        - image: circleci/ruby:2.6
+    steps:
+      - checkout
+      - run:
+          name: Setup Rubygems
+          command: bash .circleci/setup-rubygems.sh
+      - run: gem build honeycomb-beeline.gemspec
+      - run: gem push honeycomb-beeline-*.gem
+  lint:
+    parameters:
+      ruby-version:
+        type: string
+        default: "2.6"
+    docker:
+        - image: circleci/ruby:<< parameters.ruby-version >>
+    steps:
+      - ruby:
+          ruby-version: << parameters.ruby-version >>
+          command: bundle exec rake rubocop
+  test:
+    parameters:
+      gemfile:
+        type: string
+      ruby-version:
+        type: string
+    docker:
+        - image: circleci/ruby:<< parameters.ruby-version >>
+    steps:
+      - ruby:
+          ruby-version: << parameters.ruby-version >>
+          gemfile: << parameters.gemfile >>
+          command: bundle exec rake test
+
+workflows:
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - lint
+      - test: &test
+          requires:
+            - lint
+          matrix:
+            parameters:
+              ruby-version: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.7"]
+              gemfile:
+                - gemfiles/aws_2.gemfile
+                - gemfiles/aws_3.gemfile
+                - gemfiles/faraday_0.gemfile
+                - gemfiles/faraday_1.gemfile
+                - gemfiles/sequel4.gemfile
+                - gemfiles/sequel5.gemfile
+                - gemfiles/sinatra.gemfile
+                - gemfiles/rack.gemfile
+                - gemfiles/rails_41.gemfile
+                - gemfiles/rails_42.gemfile
+                - gemfiles/rails_5.gemfile
+                - gemfiles/rails_51.gemfile
+                - gemfiles/rails_52.gemfile
+                - gemfiles/rails_6.gemfile
+                - gemfiles/redis_3.gemfile
+                - gemfiles/redis_4.gemfile
+            exclude:
+              - ruby-version: "2.2"
+                gemfile: gemfiles/faraday_1.gemfile
+              - ruby-version: "2.2"
+                gemfile: gemfiles/rails_52.gemfile
+              - ruby-version: "2.2"
+                gemfile: gemfiles/rails_6.gemfile
+              - ruby-version: "2.3"
+                gemfile: gemfiles/rails_6.gemfile
+              - ruby-version: "2.4"
+                gemfile: gemfiles/rails_6.gemfile
+              - ruby-version: "2.4"
+                gemfile: gemfiles/rails_41.gemfile
+              - ruby-version: "2.5"
+                gemfile: gemfiles/rails_41.gemfile
+              - ruby-version: "2.6"
+                gemfile: gemfiles/rails_41.gemfile
+              - ruby-version: "2.7"
+                gemfile: gemfiles/rails_41.gemfile
+              - ruby-version: "2.7"
+                gemfile: gemfiles/rails_42.gemfile
+  beeline:
+    jobs:
+      - lint:
+          filters:
+              tags:
+                only: /.*/
+      - test:
+          <<: *test
+          filters:
+              tags:
+                only: /.*/
+      - publish:
+          filters:
+              tags:
+                only: /^v.*/
+              branches:
+                ignore: /.*/
+          requires:
+            - lint
+            - test
