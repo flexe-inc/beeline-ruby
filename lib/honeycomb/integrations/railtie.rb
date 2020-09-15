@@ -10,7 +10,7 @@ module Honeycomb
                 after: :load_config_initializers) do |app|
       if Honeycomb.client
         app.config.middleware.insert_after(
-          ActionDispatch::RemoteIp,
+          ActionDispatch::ShowExceptions,
           Honeycomb::Rails::Middleware,
           client: Honeycomb.client,
         )

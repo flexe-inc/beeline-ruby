@@ -10,10 +10,12 @@ require "honeycomb/trace"
 module Honeycomb
   INTEGRATIONS = %i[
     active_support
+    aws
     faraday
     rack
     rails
     railtie
+    redis
     sequel
     sinatra
   ].freeze
@@ -22,7 +24,8 @@ module Honeycomb
     extend Forwardable
     attr_reader :client
 
-    def_delegators :@client, :start_span, :add_field, :add_field_to_trace
+    def_delegators :@client, :libhoney, :start_span, :add_field,
+                   :add_field_to_trace, :current_span, :current_trace
 
     def configure
       Configuration.new.tap do |config|

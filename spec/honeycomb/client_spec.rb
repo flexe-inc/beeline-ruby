@@ -118,7 +118,7 @@ RSpec.describe Honeycomb::Client do
 
     it_behaves_like "event data",
                     package_fields: false,
-                    additional_fields: ["request.error", "request.error_detail"]
+                    additional_fields: %w[error error_detail]
   end
 
   describe "can add field to trace" do
@@ -154,5 +154,29 @@ RSpec.describe Honeycomb::Client do
     let(:event_data) { libhoney_client.events.map(&:data) }
 
     it_behaves_like "event data", package_fields: false
+  end
+
+  describe "sending from within a span block" do
+    it "does not also send the parent span" do
+      client.start_span(name: "root")
+
+      # rubocop:disable Style/SymbolProc
+      client.start_span(name: "child") do |child_span|
+        child_span.send
+      end
+      # rubocop:enable Style/SymbolProc
+
+      expect(libhoney_client.events.size).to eq 1
+    end
+
+    it "does not raise an error when the span is the root" do
+      expect do
+        # rubocop:disable Style/SymbolProc
+        client.start_span(name: "child") do |child_span|
+          child_span.send
+        end
+        # rubocop:enable Style/SymbolProc
+      end.to_not raise_error
+    end
   end
 end

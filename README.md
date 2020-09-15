@@ -1,7 +1,8 @@
 # Honeycomb Beeline for Ruby
 
-[![Build Status](https://travis-ci.org/honeycombio/beeline-ruby.svg?branch=master)](https://travis-ci.org/honeycombio/beeline-ruby)
+[![Build Status](https://circleci.com/gh/honeycombio/beeline-ruby.svg?style=svg)](https://circleci.com/gh/honeycombio/beeline-ruby)
 [![Gem Version](https://badge.fury.io/rb/honeycomb-beeline.svg)](https://badge.fury.io/rb/honeycomb-beeline)
+[![codecov](https://codecov.io/gh/honeycombio/beeline-ruby/branch/main/graph/badge.svg)](https://codecov.io/gh/honeycombio/beeline-ruby)
 
 This package makes it easy to instrument your Ruby web app to send useful events to [Honeycomb](https://www.honeycomb.io), a service for debugging your software in production.
 - [Usage and Examples](https://docs.honeycomb.io/getting-data-in/beelines/ruby-beeline/)
@@ -16,9 +17,11 @@ Requires Ruby version 2.3 or later
 Built in instrumentation for:
 
 - Active Support
+- AWS (v2 and v3)
 - Faraday
 - Rack
 - Rails (tested on versions 4.1 and up)
+- Redis (tested on versions 3.x and 4.x)
 - Sequel
 - Sinatra
 
